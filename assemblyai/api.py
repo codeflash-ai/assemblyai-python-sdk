@@ -24,10 +24,13 @@ def _get_error_message(response: httpx.Response) -> str:
     Returns: the error message
     """
 
-    try:
-        return response.json()["error"]
-    except Exception:
-        return f"\nReason: {response.text}\nRequest: {response.request}"
+    # Check content-type before attempting JSON parsing for better performance
+    if response.headers.get("content-type", "").startswith("application/json"):
+        try:
+            return response.json()["error"]
+        except Exception:
+            pass
+    return f"\nReason: {response.text}\nRequest: {response.request}"
 
 
 def create_transcript(
