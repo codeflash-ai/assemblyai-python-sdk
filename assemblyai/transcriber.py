@@ -32,6 +32,8 @@ from websockets.sync.client import connect as websocket_connect
 from . import api, lemur, types
 from . import client as _client
 
+_executor = concurrent.futures.ThreadPoolExecutor()
+
 
 class _TranscriptImpl:
     def __init__(
@@ -247,7 +249,6 @@ class Transcript(types.Sourcable):
             client=self._client,
             transcript_id=transcript_id,
         )
-        self._executor = concurrent.futures.ThreadPoolExecutor()
 
     def wait_for_completion(self) -> Self:
         self._impl.wait_for_completion()
@@ -257,7 +258,7 @@ class Transcript(types.Sourcable):
     def wait_for_completion_async(
         self,
     ) -> concurrent.futures.Future[Self]:
-        return self._executor.submit(self.wait_for_completion)
+        return _executor.submit(self.wait_for_completion)
 
     @classmethod
     def from_response(
