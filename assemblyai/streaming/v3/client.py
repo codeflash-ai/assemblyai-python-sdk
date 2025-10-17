@@ -48,10 +48,7 @@ def _dump_model_json(model: BaseModel):
 
 def _user_agent() -> str:
     vi = sys.version_info
-    python_version = f"{vi.major}.{vi.minor}.{vi.micro}"
-    return (
-        f"AssemblyAI/1.0 (sdk=Python/{__version__} runtime_env=Python/{python_version})"
-    )
+    return f"AssemblyAI/1.0 (sdk=Python/{__version__} runtime_env=Python/{vi.major}.{vi.minor}.{vi.micro})"
 
 
 class StreamingClient:
