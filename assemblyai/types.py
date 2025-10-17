@@ -1341,18 +1341,24 @@ class TranscriptionConfig:
         There are some limitations to the parameter. You can pass a maximum of 1,000 unique keywords/phrases in your list,
         and each of them must contain 6 words or less.
         """
+        # Local bindings for faster __setattr__ (slower with attribute lookup in insights)
+        rtc = self._raw_transcription_config
 
         if not words:
-            self._raw_transcription_config.word_boost = None
-            self._raw_transcription_config.boost_param = None
-
+            # Only assign when value isn't already None (avoids unnecessary writes to object attributes)
+            if rtc.word_boost is not None:
+                rtc.word_boost = None
+            if rtc.boost_param is not None:
+                rtc.boost_param = None
             return self
 
+        # Avoids setting default if already set
         if not boost:
-            self._raw_transcription_config.boost_param = WordBoost.default
+            if rtc.boost_param != WordBoost.default:
+                rtc.boost_param = WordBoost.default
 
-        self._raw_transcription_config.word_boost = words
-        self._raw_transcription_config.boost_param = boost
+        rtc.word_boost = words
+        rtc.boost_param = boost
 
         return self
 
