@@ -1289,9 +1289,13 @@ class _RealtimeTranscriberImpl:
         if self._token is None:
             additional_headers = {"Authorization": f"{self._client.settings.api_key}"}
 
+        endpoint_url = (
+            f"{websocket_base_url}{api.ENDPOINT_REALTIME_WEBSOCKET}?{urlencode(params)}"
+        )
+
         try:
             self._websocket = websocket_connect(
-                f"{websocket_base_url}{api.ENDPOINT_REALTIME_WEBSOCKET}?{urlencode(params)}",
+                endpoint_url,
                 additional_headers=additional_headers,
                 open_timeout=timeout,
             )
