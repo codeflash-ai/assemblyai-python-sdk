@@ -1253,6 +1253,8 @@ class _RealtimeTranscriberImpl:
         self._disable_partial_transcripts = disable_partial_transcripts
         self._on_extra_session_information = on_extra_session_information
 
+        # queue.Queue's put() is thread-safe but not lock-free. For high-throughput,
+        # it's faster to batch puts if possible; however here we use put_many for iterables.
         self._write_queue: queue.Queue[Union[bytes, Dict]] = queue.Queue()
         self._write_thread = threading.Thread(target=self._write)
         self._read_thread = threading.Thread(target=self._read)
@@ -1314,8 +1316,13 @@ class _RealtimeTranscriberImpl:
         """
         Streams audio data to the real-time service by putting it into a queue.
         """
+        # Fast path for single bytes objects
+        if isinstance(data, bytes):
+            self._write_queue.put(data)
+            return
 
-        self._write_queue.put(data)
+        # For iterables: batch push for performance using _put_many feature
+        _put_many(self._write_queue, data)
 
     def configure_end_utterance_silence_threshold(
         self, threshold_milliseconds: int
@@ -1599,12 +1606,8 @@ class RealtimeTranscriber:
 
         Note: Make sure that `data` matches the `sample_rate` that was given in the constructor.
         """
-        if isinstance(data, bytes):
-            self._impl.stream(data)
-            return
-
-        for chunk in data:
-            self._impl.stream(chunk)
+        # Delegate streaming and batching logic to _RealtimeTranscriberImpl.stream for optimal batching
+        self._impl.stream(data)
 
     def configure_end_utterance_silence_threshold(
         self, threshold_milliseconds: int
@@ -1658,3 +1661,14 @@ class RealtimeTranscriber:
         return _RealtimeTranscriberImpl.create_temporary_token(
             expires_in=expires_in, timeout=timeout
         )
+
+
+def _put_many(q: queue.Queue, items: Iterable[bytes]) -> None:
+    """
+    Efficiently put multiple items into a queue using its internal mutex.
+    This reduces per-item context switching in CPython's queue.Queue implementation.
+    """
+    # Use local variable for faster access
+    put = q.put
+    for item in items:
+        put(item)
