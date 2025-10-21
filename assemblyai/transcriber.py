@@ -1507,13 +1507,16 @@ class _RealtimeForceEndUtterance:
 class _RealtimeEndUtteranceSilenceThreshold:
     def __init__(self, threshold_milliseconds: int) -> None:
         self._value = threshold_milliseconds
+        # Precompute the dict once since the value is set only in __init__ and never changes.
+        self._dict: Dict[str, int] = {"end_utterance_silence_threshold": self._value}
 
     @property
     def value(self) -> int:
         return self._value
 
     def as_dict(self) -> Dict[str, int]:
-        return {"end_utterance_silence_threshold": self._value}
+        # Return the precomputed dict
+        return self._dict
 
 
 class RealtimeTranscriber:
